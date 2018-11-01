@@ -67,28 +67,54 @@ function menu() {
       }
     ])
     .then(function(answer) {
-      var query = "SELECT * FROM products WHERE ?";
-      connection.query(query, { item_id: answer.id }, function(err, res) {
-        if (res[0].stock_quantity > answer.qty) {
-          var newQty = res[0].stock_quantity - answer.qty;
-          console.log("Updating ...  New quantity left: " + newQty);
+      if (
+        isNaN(answer.id) ||
+        isNaN(answer.qty) ||
+        answer.qty == "" ||
+        answer.id == ""
+      ) {
+        console.log("Just numbers");
+        menu();
+      } else {
+        var query = "SELECT * FROM products WHERE ?";
+        connection.query(query, { item_id: answer.id }, function(err, res) {
+          if (res[0].stock_quantity >= answer.qty) {
+            var price = res[0].price;
+            var newQty = res[0].stock_quantity - answer.qty;
+            console.log("Updating ...  New quantity left: " + newQty);
 
-          var query = "UPDATE products SET ? WHERE item_id='" + answer.id + "'";
-          connection.query(query, { stock_quantity: newQty }, function(
-            err,
-            res
-          ) {
-            header();
-            showAll();
-          });
-        } else {
-          console.log(
-            "Insufficient quantity! Maximum quantity is: " +
-              res[0].stock_quantity
-          );
-          menu();
-        }
-      });
+            var query =
+              "UPDATE products SET ? WHERE item_id='" + answer.id + "'";
+            connection.query(query, { stock_quantity: newQty }, function(
+              err,
+              res
+            ) {
+              console.log("Total price: " + price * answer.qty);
+              next();
+            });
+          } else {
+            console.log(
+              "Insufficient quantity! Maximum quantity is: " +
+                res[0].stock_quantity
+            );
+            menu();
+          }
+        });
+      }
+    });
+}
+
+function next() {
+  console.log("\n");
+  inquirer
+    .prompt({
+      name: "cont",
+      type: "input",
+      message: "Continue?"
+    })
+    .then(function(answer) {
+      header();
+      showAll();
     });
 }
 
